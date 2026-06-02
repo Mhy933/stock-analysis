@@ -181,6 +181,24 @@ python stock_full_report.py 600519
 # 后续 Phase 2/3 由 AI 继续完成
 ```
 
+### DeepSeek API 接入
+
+本项目提供 `deepseek_client.py`，用于把 Phase 1 采集到的数据交给 DeepSeek 生成分析提纲或研报草稿。API Key 请放在环境变量或本地 `.env` 文件中，`.env` 已被 `.gitignore` 忽略，禁止提交真实密钥。
+
+```bash
+# Windows PowerShell
+$env:DEEPSEEK_API_KEY="your-deepseek-api-key"
+
+# macOS / Linux
+export DEEPSEEK_API_KEY="your-deepseek-api-key"
+
+# 连通性测试
+python deepseek_client.py --test
+
+# 基于采集数据生成分析提纲
+python deepseek_client.py "请输出 Step 0-8 的个股分析提纲" --stock-data output/data_600519.json --output output/deepseek_600519.md
+```
+
 ### 增量更新
 
 ```bash
