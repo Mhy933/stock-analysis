@@ -78,6 +78,11 @@ if (!(Test-Path $dataPath)) {
     exit 1
 }
 
+$summaryPath = Join-Path $ProjectRoot "output\summary_$code.html"
+Write-Host ""
+Write-Host "[View] Creating readable HTML data summary ..." -ForegroundColor Yellow
+& $VenvPython view_stock_data.py $dataPath --output $summaryPath
+
 if (Test-Path "Env:\DEEPSEEK_API_KEY") {
     $timestamp = Get-Date -Format "yyyyMMdd_HHmm"
     $analysisPath = Join-Path $ProjectRoot "output\deepseek_${code}_${timestamp}.md"
@@ -96,6 +101,8 @@ if (Test-Path "Env:\DEEPSEEK_API_KEY") {
     Write-Host "Data collection completed, but DeepSeek analysis was skipped."
     Write-Host "Set DEEPSEEK_API_KEY in PowerShell or create a local .env file."
     Write-Host "Data file: $dataPath"
+    Write-Host "Readable summary: $summaryPath"
+    Start-Process $summaryPath
 }
 
 Write-Host ""
