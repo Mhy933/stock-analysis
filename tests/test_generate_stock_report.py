@@ -201,6 +201,74 @@ class GenerateStockReportTests(unittest.TestCase):
         self.assertIn("技术面中性偏强", report)
         self.assertIn("多周期趋势", report)
 
+    def test_render_report_includes_reference_style_required_components(self):
+        payload = {
+            "blocks": {
+                "spot": [{"股票简称": "测试股份", "最新价": 12.3}],
+                "kline_daily": [{"day": "2026-06-02", "open": 10, "high": 13, "low": 9, "close": 12, "volume": 1000}],
+                "zygc": [{"项目": "核心产品", "营业收入": 100}],
+                "news": [
+                    {"新闻标题": "订单增长", "发布时间": "2026-06-02"},
+                    {"新闻标题": "资金流出", "发布时间": "2026-06-01"},
+                    {"新闻标题": "公告披露", "发布时间": "2026-05-31"},
+                ],
+            }
+        }
+        analysis = json.dumps(
+            {
+                "summary": "等待回调后胜率更好。",
+                "target_price": "18-22元",
+                "profit_loss_ratio": "2.1x",
+                "risk_level": "中",
+                "suggested_position": "30%-50%",
+                "quality_score": 72,
+                "steps": {
+                    "step4": {
+                        "bull": "订单放量",
+                        "base": "稳步修复",
+                        "bear": "招标推迟",
+                        "drivers": [
+                            {"name": "核心业务", "ratio": "75%", "margin": "18%", "factor": "订单弹性"},
+                            {"name": "配套业务", "ratio": "20%", "margin": "15%", "factor": "规模效应"},
+                            {"name": "其他业务", "ratio": "5%", "margin": "25%", "factor": "费用摊薄"},
+                        ],
+                        "formulas": [
+                            {"label": "目标利润", "formula": "收入 x 毛利率 - 费用", "result": "利润修复"},
+                            {"label": "赔率", "formula": "(目标价-现价)/(现价-止损)", "result": "2.1x"},
+                        ],
+                    },
+                    "step8": {
+                        "judgment": "中性偏积极",
+                        "tracking": ["订单公告", "毛利率修复"],
+                        "catalysts": [
+                            {"name": "订单公告", "impact": "验证需求", "status": "待兑现", "note": "关注公告"},
+                            {"name": "毛利率修复", "impact": "改善利润", "status": "持续观察", "note": "看季报"},
+                        ],
+                        "events": ["首次覆盖：建立跟踪清单", "更新：等待下一期财报"],
+                    },
+                },
+            },
+            ensure_ascii=False,
+        )
+
+        report = g.render_report(payload, "000001", "测试股份", analysis)
+
+        self.assertEqual(report.count('class="hero-meta-item"'), 5)
+        self.assertGreaterEqual(report.count("利好") + report.count("利空") + report.count("中性"), 3)
+        self.assertIn("催化剂兑现追踪", report)
+        self.assertIn("📋 事件记录", report)
+        self.assertIn("核心业务", report)
+        self.assertIn("公式", report)
+        self.assertIn("免责声明", report)
+        self.assertIn("作者：明立", report)
+        self.assertIn("ll-mingli1221", report)
+
+    def test_deepseek_prompt_requests_reference_style_structured_fields(self):
+        prompt = g.build_deepseek_prompt("测试股份", "000001")
+
+        for field in ["drivers", "formulas", "catalysts", "events", "quality_score"]:
+            self.assertIn(field, prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

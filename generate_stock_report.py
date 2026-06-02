@@ -300,6 +300,37 @@ def render_news_list(rows: Any, limit: int = 6) -> str:
     return f'<div class="news-list">{"".join(items)}</div>' if items else '<p class="muted">暂无新闻或公告数据。</p>'
 
 
+def classify_news_sentiment(title: str) -> tuple[str, str, str]:
+    text = title.lower()
+    negative_words = ["流出", "减持", "亏损", "下滑", "跌", "撤离", "不及预期", "风险", "处罚"]
+    positive_words = ["增长", "中标", "订单", "盈利", "扭亏", "涨停", "突破", "回暖", "利好"]
+    if any(word in text for word in negative_words):
+        return ("利空", "var(--green-down)", "rgba(40,199,91,0.15)")
+    if any(word in text for word in positive_words):
+        return ("利好", "var(--red-up)", "rgba(245,86,86,0.15)")
+    return ("中性", "var(--gold)", "rgba(212,168,83,0.15)")
+
+
+def render_news_cards(rows: Any, limit: int = 8) -> str:
+    if not isinstance(rows, list) or not rows:
+        return '<p class="muted">暂无近期动态，需人工补充新闻、公告和政策催化。</p>'
+
+    items: list[str] = []
+    for row in rows[:limit]:
+        if not isinstance(row, dict):
+            continue
+        title = compact(first_value(row, ["新闻标题", "标题", "title"], "未命名事件"))
+        date = compact(first_value(row, ["发布时间", "日期", "date", "time"], ""))[:10]
+        label, color, bg = classify_news_sentiment(title)
+        items.append(
+            f'<div class="news-item" style="border-left:3px solid {color};">'
+            f'<span class="news-text">{html.escape((date + " " + title).strip())}</span>'
+            f'<span style="padding:2px 8px;background:{bg};color:{color};border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap;margin-left:12px;">{label}</span>'
+            "</div>"
+        )
+    return f'<div class="news-list">{"".join(items)}</div>' if items else '<p class="muted">暂无近期动态。</p>'
+
+
 def render_checklist(items: list[str]) -> str:
     return '<ul class="checklist">' + "".join(f"<li>{html.escape(item)}</li>" for item in items) + "</ul>"
 
@@ -341,6 +372,94 @@ def render_technical_scores(technical: dict[str, Any]) -> str:
     <div class="rating-callout" style="margin-bottom:16px;"><div class="badge">技</div><div class="body"><div class="title">{html.escape(judgment)}</div><div class="desc">技术评分由 DeepSeek 结合 K 线、均线、指标和资金面信号生成。</div></div></div>
     {score_bar("多周期趋势", trend)}{score_bar("技术指标", indicator)}{score_bar("形态完整度", pattern)}{score_bar("量价配合", volume_price, warn=volume_price < 60)}{score_bar("资金面", fund_flow, warn=fund_flow < 60)}
 """
+
+
+def render_elasticity_tree(step4: dict[str, Any]) -> str:
+    drivers = step4.get("drivers")
+    if not isinstance(drivers, list) or not drivers:
+        drivers = [
+            {"name": "核心业务", "ratio": "主营占比最高", "margin": "毛利率待验证", "factor": "收入弹性"},
+            {"name": "次要业务", "ratio": "第二增长曲线", "margin": "费用摊薄", "factor": "规模效应"},
+            {"name": "其他业务", "ratio": "补充贡献", "margin": "现金流", "factor": "估值修复"},
+        ]
+    cards: list[str] = []
+    for index, driver in enumerate(drivers[:3]):
+        if not isinstance(driver, dict):
+            continue
+        color = "var(--red-up)" if index == 0 else ("var(--gold)" if index == 1 else "var(--text-muted)")
+        cards.append(
+            f'<div style="flex:{2 if index == 0 else 1};background:var(--card-bg-alt);border:1px solid var(--border);border-left:4px solid {color};border-radius:8px;padding:12px;">'
+            f'<strong style="color:{color};">{html.escape(text_value(driver, "name", f"弹性因子{index + 1}"))}</strong>'
+            f'<div class="muted">营收占比：{html.escape(text_value(driver, "ratio", "待补充"))}</div>'
+            f'<div class="muted">毛利率：{html.escape(text_value(driver, "margin", "待补充"))}</div>'
+            f'<div class="muted">弹性因子：{html.escape(text_value(driver, "factor", "待验证"))}</div>'
+            "</div>"
+        )
+    return (
+        '<div style="margin:16px 0;">'
+        '<div style="max-width:360px;margin:0 auto;background:linear-gradient(135deg,#1e1a10,#241f14);border:2px solid var(--gold);border-radius:10px;padding:12px;text-align:center;">'
+        '<strong style="color:var(--gold-light);">业绩弹性树</strong><div class="muted">收入增长 x 毛利率修复 x 费用摊薄</div></div>'
+        '<div style="width:2px;height:10px;background:var(--gold);margin:0 auto;"></div>'
+        '<div style="border-top:2px solid var(--gold);margin:0 12%;"></div>'
+        f'<div style="display:flex;gap:12px;margin-top:10px;align-items:stretch;">{"".join(cards)}</div>'
+        "</div>"
+    )
+
+
+def render_formula_cards(step4: dict[str, Any], step6: dict[str, Any]) -> str:
+    formulas = step4.get("formulas")
+    if not isinstance(formulas, list) or not formulas:
+        formulas = [
+            {"label": "目标利润", "formula": "收入 x 毛利率 - 费用", "result": "等待财务验证"},
+            {"label": "盈亏比", "formula": "(目标价 - 现价) / (现价 - 止损)", "result": text_value(step6, "profit_loss_ratio", "待补充")},
+        ]
+    cards: list[str] = []
+    for formula in formulas[:4]:
+        if not isinstance(formula, dict):
+            continue
+        cards.append(
+            '<div style="background:var(--card-bg-alt);border:1px solid var(--border);border-radius:8px;padding:12px;">'
+            f'<strong style="color:var(--gold);">公式 · {html.escape(text_value(formula, "label", "测算"))}</strong>'
+            f'<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);margin-top:6px;">{html.escape(text_value(formula, "formula", "待补充"))}</div>'
+            f'<div style="color:var(--red-up);font-weight:700;margin-top:6px;">{html.escape(text_value(formula, "result", "待验证"))}</div>'
+            "</div>"
+        )
+    return f'<div class="grid-2" style="margin-top:14px;">{"".join(cards)}</div>'
+
+
+def render_catalyst_table(step8: dict[str, Any], tracking_items: list[str]) -> str:
+    catalysts = step8.get("catalysts")
+    if not isinstance(catalysts, list) or not catalysts:
+        catalysts = [{"name": item, "impact": "影响研究结论", "status": "持续观察", "note": "等待公开数据验证"} for item in tracking_items[:6]]
+    rows: list[str] = []
+    for item in catalysts[:8]:
+        if not isinstance(item, dict):
+            continue
+        status = text_value(item, "status", "持续观察")
+        status_color = "var(--red-up)" if "已兑现" in status else ("var(--gold)" if "待" in status else "var(--text-muted)")
+        rows.append(
+            "<tr>"
+            f"<td>{html.escape(text_value(item, 'name', '催化剂'))}</td>"
+            f"<td>{html.escape(text_value(item, 'impact', '待评估'))}</td>"
+            f"<td style=\"color:{status_color};font-weight:700;\">{html.escape(status)}</td>"
+            f"<td>{html.escape(text_value(item, 'note', '持续跟踪'))}</td>"
+            "</tr>"
+        )
+    return (
+        '<h3 style="font-size:15px;color:var(--gold-light);margin:16px 0 8px;">催化剂兑现追踪</h3>'
+        '<table class="cons"><thead><tr><th>跟踪指标/催化剂</th><th>预期影响</th><th>兑现状态</th><th>备注</th></tr></thead>'
+        f"<tbody>{''.join(rows)}</tbody></table>"
+    )
+
+
+def render_event_log(step8: dict[str, Any]) -> str:
+    events = list_value(step8, "events", ["首次覆盖：生成基础跟踪清单，等待后续数据更新。"])
+    return (
+        '<div style="border-left:4px solid var(--gold);background:var(--card-bg-alt);border-radius:8px;padding:12px 14px;margin-top:12px;">'
+        '<p style="font-weight:700;color:var(--gold);margin-bottom:6px;">📋 事件记录</p>'
+        + "".join(f'<p class="muted" style="margin:4px 0;">{html.escape(event)}</p>' for event in events[:6])
+        + "</div>"
+    )
 
 
 def render_research_skeleton(
@@ -433,6 +552,8 @@ def render_research_skeleton(
 
   <div class="card" id="elasticity">
     <div class="card-header"><span class="icon">4</span><h2>Step 4 弹性空间</h2></div>
+    {render_elasticity_tree(step4)}
+    {render_formula_cards(step4, step6)}
     <div class="grid-3">
       <div class="scenario bull"><strong>乐观情景</strong><div class="prob">概率 25%</div><div class="muted">{html.escape(bull)}</div></div>
       <div class="scenario"><strong>基准情景</strong><div class="prob">概率 50%</div><div class="muted">{html.escape(base)}</div></div>
@@ -479,6 +600,8 @@ def render_research_skeleton(
         {score_bar("基本面 30%", 60)}{score_bar("资金面 20%", 55, warn=True)}{score_bar("技术面 20%", 60)}{score_bar("事件催化 15%", 58, warn=True)}{score_bar("估值赔率 15%", 56, warn=True)}
       </div>
     </div>
+    {render_catalyst_table(step8, tracking_items)}
+    {render_event_log(step8)}
     {analysis_block}
   </div>
 
@@ -516,16 +639,17 @@ def build_deepseek_prompt(stock_name: str, code: str) -> str:
   "profit_loss_ratio": "例如 2.1x；没有依据则写 待评估",
   "risk_level": "低/中/高",
   "suggested_position": "例如 30%-50%；没有依据则写 观察",
+  "quality_score": 0,
   "steps": {{
     "step0": {{"title": "投资命题", "bullets": ["要点1", "要点2"]}},
     "step1": {{"title": "主要矛盾", "text": "为什么现在看"}},
     "step2": {{"title": "产业链位置", "text": "位置、议价权、景气传导"}},
     "step3": {{"score": 0, "rating": "A/B/C 等", "text": "公司质地判断"}},
-    "step4": {{"bull": "乐观情景", "base": "基准情景", "bear": "悲观情景"}},
+    "step4": {{"bull": "乐观情景", "base": "基准情景", "bear": "悲观情景", "drivers": [{{"name": "业务线", "ratio": "营收占比", "margin": "毛利率", "factor": "弹性因子"}}], "formulas": [{{"label": "公式名", "formula": "计算公式", "result": "测算结果"}}]}},
     "step5": {{"risks": ["风险1", "风险2", "风险3"]}},
     "step6": {{"text": "估值与赔率判断", "target_range": "目标区间", "buy_zone": "买入区间", "stop_loss": "止损位", "profit_loss_ratio": "盈亏比"}},
     "step7": {{"text": "同业比较结论", "peers": [{{"name": "可比公司", "growth": "成长性", "profitability": "盈利能力", "valuation": "估值", "note": "备注"}}]}},
-    "step8": {{"judgment": "综合研判", "tracking": ["跟踪项1", "跟踪项2"]}},
+    "step8": {{"judgment": "综合研判", "tracking": ["跟踪项1", "跟踪项2"], "catalysts": [{{"name": "催化剂", "impact": "预期影响", "status": "待兑现/已兑现/持续观察", "note": "备注"}}], "events": ["事件记录1", "事件记录2"]}},
     "technical": {{"trend": 0, "indicator": 0, "pattern": 0, "volume_price": 0, "fund_flow": 0, "judgment": "技术面判断"}}
   }}
 }}
@@ -568,6 +692,7 @@ def render_report(payload: dict[str, Any], code: str, stock_name: str, analysis_
 
     change_class = "val-up" if quote["change"] >= 0 else "val-down"
     generated_at = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+    generated_date = generated_at[:10]
     module_counts = [{"模块": key, "记录数": len(value) if isinstance(value, (list, dict)) else int(bool(value))}
                      for key, value in blocks.items()]
 
@@ -643,7 +768,7 @@ def render_report(payload: dict[str, Any], code: str, stock_name: str, analysis_
     </div>
     <div class="card">
       <div class="card-header"><span class="icon">闻</span><h2>新闻与公告</h2></div>
-      {render_table(blocks.get("news") or blocks.get("notice"), "新闻公告")}
+      {render_news_cards(blocks.get("news") or blocks.get("notice"))}
     </div>
   </div>
 
@@ -660,8 +785,11 @@ def render_report(payload: dict[str, Any], code: str, stock_name: str, analysis_
   </div>
 
   <footer>
-    <p>本页面由 stock-analysis 本地工具生成，仅用于研究辅助，不构成投资建议。</p>
-    <p>生成时间：{generated_at}</p>
+    <p>⚠️ 免责声明：本报告仅供研究参考，不构成投资建议。投资有风险，决策需谨慎。</p>
+    <p>📅 分析基准日：{generated_date} · 数据截止：{html.escape(compact(quote["date"]))} · 研究状态：首次覆盖/自动生成</p>
+    <p style="font-size:11px;color:var(--text-muted);">数据来源：akshare(雪球/新浪/同花顺/东方财富/巨潮资讯) · DeepSeek · stock-analysis · {generated_date} · @明立玩AI · 个股深度研究系统 v3.0</p>
+    <p style="margin-top:6px;">作者：明立 · AI教育资深玩家 · AI应用落地近4年经验</p>
+    <p>📮 联系作者获取更多skill：ll-mingli1221</p>
   </footer>
 </div>
 <script>{js}</script>
