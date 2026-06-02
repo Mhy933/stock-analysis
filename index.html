@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个股分析报告</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101318;
+      --panel: #181d24;
+      --panel-2: #202631;
+      --text: #eef2f6;
+      --muted: #aab3bf;
+      --line: #303947;
+      --accent: #d7aa55;
+      --accent-2: #6bb6ff;
+      --good: #29c36a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      line-height: 1.65;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 42px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 0 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(215, 170, 85, 0.55);
+      border-radius: 8px;
+      background: #161a20;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .button {
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .button.primary {
+      border-color: rgba(215, 170, 85, 0.65);
+      background: var(--accent);
+      color: #151006;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      gap: 24px;
+      padding-top: 28px;
+    }
+
+    .intro {
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .intro h2 {
+      margin: 0;
+      max-width: 720px;
+      font-size: clamp(32px, 5vw, 56px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .intro .lead {
+      max-width: 720px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .metric {
+      min-height: 92px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+    }
+
+    .metric strong {
+      display: block;
+      color: var(--accent);
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .preview {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .preview img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 11;
+      object-fit: cover;
+      object-position: top center;
+      background: #0d1015;
+    }
+
+    .preview-body {
+      padding: 18px;
+    }
+
+    .preview-body h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .preview-body p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .workflow {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 2px;
+    }
+
+    .step {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .step b {
+      color: var(--good);
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .step h3 {
+      margin: 8px 0 6px;
+      font-size: 18px;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    code {
+      color: var(--accent-2);
+      font-family: Consolas, "SFMono-Regular", monospace;
+    }
+
+    @media (max-width: 820px) {
+      header,
+      main,
+      .workflow {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        align-items: flex-start;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="mark">股</div>
+        <div>
+          <h1>个股分析报告</h1>
+          <p>基本面、技术面、资金面一体化研究模板</p>
+        </div>
+      </div>
+      <nav class="actions" aria-label="主要链接">
+        <a class="button primary" href="./examples/个股研究-中国长城.html">查看示例报告</a>
+        <a class="button" href="https://github.com/mingli30119/stock-analysis">GitHub 仓库</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro">
+        <h2>一句话生成结构化个股研报</h2>
+        <p class="lead">项目通过 Python 采集 A 股行情、财务、资金流、公告新闻等数据，并结合 AI 分析流程生成可交互 HTML 报告。</p>
+        <div class="metrics" aria-label="项目能力">
+          <div class="metric">
+            <strong>30+</strong>
+            <span>akshare 数据接口</span>
+          </div>
+          <div class="metric">
+            <strong>9</strong>
+            <span>分析章节框架</span>
+          </div>
+          <div class="metric">
+            <strong>HTML</strong>
+            <span>ECharts 交互图表</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="preview">
+        <img src="./docs/images/dark-mode.webp" alt="深色模式报告截图">
+        <div class="preview-body">
+          <h2>中国长城 000066 示例</h2>
+          <p>包含结论卡片、K 线图、技术指标、产业链、估值与风险分析等模块。</p>
+        </div>
+      </aside>
+
+      <section class="workflow" aria-label="使用流程">
+        <div class="step">
+          <b>Phase 1</b>
+          <h3>采集数据</h3>
+          <p>运行 <code>python stock_full_report.py 600519</code> 生成基础数据文件。</p>
+        </div>
+        <div class="step">
+          <b>Phase 2</b>
+          <h3>AI 分析</h3>
+          <p>按 Step 0-8 框架完成基本面、行业、估值、风险和交易计划。</p>
+        </div>
+        <div class="step">
+          <b>Phase 3</b>
+          <h3>生成报告</h3>
+          <p>将分析内容和行情数据注入 HTML，形成可下载、可分享的研报页面。</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
