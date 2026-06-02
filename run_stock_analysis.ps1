@@ -59,16 +59,13 @@ if ($code -notmatch "^\d{6}$") {
     exit 1
 }
 
-$defaultPrompt = "Please produce a Step 0-8 stock analysis outline in Chinese, including key risks and follow-up indicators. This is research only and not investment advice."
-$prompt = Read-Host "DeepSeek prompt, press Enter to use default"
-if (!$prompt.Trim()) {
-    $prompt = $defaultPrompt
-}
+$stockName = Read-Host "Stock name, optional, for example 贵州茅台"
+$stockName = $stockName.Trim()
 
 New-Item -ItemType Directory -Force -Path (Join-Path $ProjectRoot "output") | Out-Null
 
 Write-Host ""
-Write-Host "[1/2] Collecting stock data for $code ..." -ForegroundColor Yellow
+Write-Host "[1/3] Collecting stock data for $code ..." -ForegroundColor Yellow
 & $VenvPython stock_full_report.py $code
 
 $dataPath = Join-Path $ProjectRoot "output\data_$code.json"
@@ -84,25 +81,33 @@ Write-Host "[View] Creating readable HTML data summary ..." -ForegroundColor Yel
 & $VenvPython view_stock_data.py $dataPath --output $summaryPath
 
 if (Test-Path "Env:\DEEPSEEK_API_KEY") {
-    $timestamp = Get-Date -Format "yyyyMMdd_HHmm"
-    $analysisPath = Join-Path $ProjectRoot "output\deepseek_${code}_${timestamp}.md"
+    Write-Host ""
+    Write-Host "[2/3] Calling DeepSeek and generating full HTML report ..." -ForegroundColor Yellow
+    $reportArgs = @("generate_stock_report.py", $dataPath, "--auto-deepseek")
+    if ($stockName) {
+        $reportArgs += @("--name", $stockName)
+    }
+    $reportPath = (& $VenvPython @reportArgs | Select-Object -Last 1)
 
     Write-Host ""
-    Write-Host "[2/2] Calling DeepSeek ..." -ForegroundColor Yellow
-    & $VenvPython deepseek_client.py $prompt --stock-data $dataPath --output $analysisPath
-
-    Write-Host ""
-    Write-Host "[OK] Analysis saved:" -ForegroundColor Green
-    Write-Host $analysisPath
-    Start-Process notepad.exe $analysisPath
+    Write-Host "[3/3] Full report saved:" -ForegroundColor Green
+    Write-Host $reportPath
+    Start-Process $reportPath
 } else {
     Write-Host ""
     Write-Host "[!] DEEPSEEK_API_KEY is not configured." -ForegroundColor Yellow
-    Write-Host "Data collection completed, but DeepSeek analysis was skipped."
+    Write-Host "DeepSeek analysis was skipped, but a full HTML report shell will still be created."
     Write-Host "Set DEEPSEEK_API_KEY in PowerShell or create a local .env file."
+    $reportArgs = @("generate_stock_report.py", $dataPath)
+    if ($stockName) {
+        $reportArgs += @("--name", $stockName)
+    }
+    $reportPath = (& $VenvPython @reportArgs | Select-Object -Last 1)
+
     Write-Host "Data file: $dataPath"
     Write-Host "Readable summary: $summaryPath"
-    Start-Process $summaryPath
+    Write-Host "Full report shell: $reportPath"
+    Start-Process $reportPath
 }
 
 Write-Host ""

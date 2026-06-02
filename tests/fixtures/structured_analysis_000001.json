@@ -1,0 +1,60 @@
+{
+  "summary": "国产替代主线明确，但估值需要业绩兑现支撑。",
+  "tags": ["国产替代", "订单催化", "业绩修复"],
+  "target_price": "18-22元",
+  "profit_loss_ratio": "2.1x",
+  "risk_level": "中",
+  "suggested_position": "30%-50%",
+  "steps": {
+    "step0": {
+      "title": "信创订单弹性",
+      "bullets": ["党政订单回暖", "算力业务放量"]
+    },
+    "step1": {
+      "title": "核心矛盾是订单能否转成利润"
+    },
+    "step2": {
+      "title": "产业链中游整机与生态",
+      "text": "公司处于国产算力生态中游，景气传导取决于订单、交付和毛利率。"
+    },
+    "step3": {
+      "score": 72,
+      "rating": "B+",
+      "text": "公司质地中等偏上，但仍需财报验证利润弹性。"
+    },
+    "step4": {
+      "bull": "订单集中释放，利润率修复。",
+      "base": "收入稳步修复，估值跟随业绩波动。",
+      "bear": "招标推迟，费用率拖累利润。"
+    },
+    "step5": {
+      "risks": ["订单低于预期", "毛利率继续下行", "资金流持续转弱"]
+    },
+    "step6": {
+      "text": "估值需要结合业绩修复节奏和行业可比公司折溢价判断。",
+      "target_range": "18-22元",
+      "buy_zone": "12-14元",
+      "stop_loss": "10.8元",
+      "profit_loss_ratio": "2.1x"
+    },
+    "step7": {
+      "text": "同业比较重点看收入增速、毛利率、研发投入和订单可见度。",
+      "peers": [
+        {"name": "可比A", "growth": "20%", "profitability": "强", "valuation": "25x", "note": "估值较高"},
+        {"name": "可比B", "growth": "12%", "profitability": "中", "valuation": "18x", "note": "更稳健"}
+      ]
+    },
+    "step8": {
+      "judgment": "中性偏积极",
+      "tracking": ["订单公告", "毛利率修复", "经营现金流"]
+    },
+    "technical": {
+      "trend": 75,
+      "indicator": 68,
+      "pattern": 70,
+      "volume_price": 62,
+      "fund_flow": 58,
+      "judgment": "技术面中性偏强"
+    }
+  }
+}

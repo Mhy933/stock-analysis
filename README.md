@@ -177,13 +177,24 @@ pip install -r requirements.txt
 # 采集数据
 python stock_full_report.py 600519
 
-# 数据已保存到 output/data_600519.json
-# 后续 Phase 2/3 由 AI 继续完成
+# 生成完整 HTML 研报（无 API Key 也会生成骨架版完整报告）
+python generate_stock_report.py output/data_600519.json --name 贵州茅台
+
+# 如已配置 DEEPSEEK_API_KEY，则自动生成 DeepSeek Markdown 并渲染完整 HTML
+python generate_stock_report.py output/data_600519.json --name 贵州茅台 --auto-deepseek
+```
+
+### Windows 一键启动器
+
+双击桌面快捷方式“股票分析启动器”，或在项目目录运行：
+
+```powershell
+.\run_stock_analysis.ps1
 ```
 
 ### DeepSeek API 接入
 
-本项目提供 `deepseek_client.py`，用于把 Phase 1 采集到的数据交给 DeepSeek 生成分析提纲或研报草稿。API Key 请放在环境变量或本地 `.env` 文件中，`.env` 已被 `.gitignore` 忽略，禁止提交真实密钥。
+本项目提供 `deepseek_client.py` 和 `generate_stock_report.py --auto-deepseek`，用于把 Phase 1 采集到的数据交给 DeepSeek 生成 Step 0-8 深度分析，并渲染为完整 HTML 研报。API Key 请放在环境变量或本地 `.env` 文件中，`.env` 已被 `.gitignore` 忽略，禁止提交真实密钥。
 
 ```bash
 # Windows PowerShell
@@ -197,6 +208,9 @@ python deepseek_client.py --test
 
 # 基于采集数据生成分析提纲
 python deepseek_client.py "请输出 Step 0-8 的个股分析提纲" --stock-data output/data_600519.json --output output/deepseek_600519.md
+
+# 基于采集数据直接生成完整 HTML 研报
+python generate_stock_report.py output/data_600519.json --name 贵州茅台 --auto-deepseek
 ```
 
 ### 增量更新
