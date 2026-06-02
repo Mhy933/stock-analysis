@@ -33,6 +33,23 @@ Write-Host ""
 
 Load-DotEnv -Path (Join-Path $ProjectRoot ".env")
 
+$VenvPython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+$Requirements = Join-Path $ProjectRoot "requirements.txt"
+
+if (!(Test-Path $VenvPython)) {
+    Write-Host "[Setup] Creating local Python virtual environment ..." -ForegroundColor Yellow
+    python -m venv (Join-Path $ProjectRoot ".venv")
+}
+
+if (!(Test-Path $VenvPython)) {
+    Write-Host "[X] Virtual environment was not created. Please check whether Python is installed correctly." -ForegroundColor Red
+    Read-Host "Press Enter to close"
+    exit 1
+}
+
+Write-Host "[Setup] Installing or updating Python dependencies ..." -ForegroundColor Yellow
+& $VenvPython -m pip install -r $Requirements
+
 $code = Read-Host "Enter 6-digit A-share stock code, for example 600519"
 $code = $code.Trim()
 
@@ -52,7 +69,7 @@ New-Item -ItemType Directory -Force -Path (Join-Path $ProjectRoot "output") | Ou
 
 Write-Host ""
 Write-Host "[1/2] Collecting stock data for $code ..." -ForegroundColor Yellow
-python stock_full_report.py $code
+& $VenvPython stock_full_report.py $code
 
 $dataPath = Join-Path $ProjectRoot "output\data_$code.json"
 if (!(Test-Path $dataPath)) {
@@ -67,7 +84,7 @@ if (Test-Path "Env:\DEEPSEEK_API_KEY") {
 
     Write-Host ""
     Write-Host "[2/2] Calling DeepSeek ..." -ForegroundColor Yellow
-    python deepseek_client.py $prompt --stock-data $dataPath --output $analysisPath
+    & $VenvPython deepseek_client.py $prompt --stock-data $dataPath --output $analysisPath
 
     Write-Host ""
     Write-Host "[OK] Analysis saved:" -ForegroundColor Green
